@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>EDUCATR Growth Engine</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800;900&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#0A0806;
+  --panel:#171008;
+  --panel-2:#120C08;
+  --line:#2E2019;
+  --text:#F4EDE7;
+  --muted:#9B8C82;
+  --accent-1:#FF5A36;
+  --accent-2:#FF9A5A;
+  --awareness:#E8963E;
+  --capture:#4E8CFF;
+  --setting:#2FB88B;
+  --closing:#FF5A5A;
+  --good:#34D399;
+  --warn:#FBBF24;
+  --bad:#F0523A;
+  --radius:14px;
+}
+*{box-sizing:border-box;}
+body{
+  margin:0;color:var(--text);font-family:'Inter',sans-serif;-webkit-font-smoothing:antialiased;
+  background-color:var(--bg);
+  background-image:
+    radial-gradient(ellipse 900px 600px at -5% -10%, rgba(180,40,10,.35), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 110% 0%, rgba(120,20,10,.18), transparent 60%),
+    repeating-linear-gradient(0deg, rgba(255,255,255,.035) 0px, rgba(255,255,255,.035) 1px, transparent 1px, transparent 64px),
+    repeating-linear-gradient(90deg, rgba(255,255,255,.035) 0px, rgba(255,255,255,.035) 1px, transparent 1px, transparent 64px);
+  background-attachment:fixed;
+}
+.mono{font-family:'IBM Plex Mono',monospace;}
+.wrap{max-width:1440px;margin:0 auto;padding:28px 24px 80px;}
+
+/* Header */
+.header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:18px;flex-wrap:wrap;gap:16px;}
+.header h1{font-family:'Archivo',sans-serif;font-size:38px;font-weight:800;margin:0 0 6px;letter-spacing:-0.02em;line-height:1.05;}
+.header h1 .grad{background:linear-gradient(90deg,var(--accent-1),var(--accent-2));-webkit-background-clip:text;background-clip:text;color:transparent;}
+.header .eyebrow{
+  color:var(--text);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-bottom:14px;
+  display:inline-flex;align-items:center;gap:8px;background:rgba(255,90,54,.12);
+  border:1px solid rgba(255,90,54,.35);padding:6px 14px 6px 10px;border-radius:100px;font-weight:600;
+}
+.pulse{width:7px;height:7px;border-radius:50%;background:var(--accent-1);position:relative;flex-shrink:0;}
+.pulse::after{content:'';position:absolute;inset:-4px;border-radius:50%;border:1px solid var(--accent-1);opacity:.6;animation:ring 2s ease-out infinite;}
+@keyframes ring{0%{transform:scale(.6);opacity:.7;}100%{transform:scale(2.2);opacity:0;}}
+
+/* Brand logo */
+.brand-logo{display:flex;align-items:center;gap:9px;margin-bottom:14px;}
+.brand-logo svg{width:30px;height:30px;flex-shrink:0;}
+.brand-logo .word{font-family:'Archivo',sans-serif;font-weight:800;font-size:19px;color:#FFFFFF;letter-spacing:-0.01em;cursor:context-menu;}
+
+/* Integration status chips */
+.sources-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;}
+.source-chip{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:100px;padding:7px 14px 7px 10px;font-size:12.5px;color:var(--muted);cursor:pointer;user-select:none;transition:.15s;}
+.source-chip:hover{border-color:var(--accent-1);}
+.source-chip .dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
+.source-chip.connected .dot{background:var(--good);}
+.source-chip.expired .dot{background:var(--bad);}
+.source-chip b{color:var(--text);font-weight:600;}
+
+/* Resource-mapping modal (Choose form / event type / ad account) */
+.resource-modal-backdrop{position:fixed;inset:0;z-index:1500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;}
+.resource-modal{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px;width:340px;max-width:88vw;}
+.resource-modal h3{font-family:'Archivo',sans-serif;font-size:15px;margin:0 0 6px;}
+.resource-modal p{font-size:12px;color:var(--muted);margin:0 0 14px;}
+.resource-list{max-height:260px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;}
+.resource-item{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:9px 12px;font-size:13px;cursor:pointer;text-align:left;font-family:'Inter',sans-serif;}
+.resource-item:hover{border-color:var(--accent-1);}
+.resource-modal .close-btn{margin-top:14px;background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:7px 14px;font-size:12px;cursor:pointer;width:100%;font-family:'Inter',sans-serif;}
+
+/* Client tabs */
+.client-row{display:flex;align-items:center;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+.client-tab{background:var(--panel);border:1px solid var(--line);color:var(--muted);border-radius:100px;padding:7px 16px;font-size:12.5px;font-weight:600;cursor:pointer;transition:.15s;}
+.client-tab.active{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border-color:var(--accent-1);color:#1a0a04;}
+.client-tab:hover:not(.active){border-color:var(--accent-1);color:var(--text);}
+.add-client-btn{background:none;border:1px dashed var(--line);color:var(--muted);border-radius:100px;padding:7px 14px;font-size:12.5px;cursor:pointer;}
+.add-client-btn:hover{border-color:var(--good);color:var(--good);}
+.add-client-form{display:flex;gap:6px;align-items:center;}
+.add-client-form input{background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:'Inter';}
+.add-client-form button{background:var(--good);border:none;color:#04241a;font-weight:700;border-radius:8px;padding:6px 12px;font-size:12px;cursor:pointer;}
+
+/* Context menu */
+.ctx-menu{position:fixed;z-index:1000;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:6px;box-shadow:0 12px 28px rgba(0,0,0,.45);min-width:170px;}
+.ctx-menu button{display:block;width:100%;text-align:left;background:none;border:none;color:var(--text);font-family:'Inter',sans-serif;font-size:12.5px;padding:8px 10px;border-radius:6px;cursor:pointer;}
+.ctx-menu button:hover{background:rgba(255,90,54,.14);}
+.ctx-menu button.danger{color:var(--bad);}
+.ctx-menu button.danger:hover{background:rgba(240,82,58,.14);}
+
+/* Week nav */
+.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.week-nav button.arrow{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:8px;width:30px;height:30px;cursor:pointer;font-size:14px;}
+.week-nav button.arrow:disabled{opacity:.3;cursor:not-allowed;}
+.week-label{font-family:'Archivo',sans-serif;font-weight:600;font-size:14px;background:var(--panel);border:1px solid var(--line);padding:7px 14px;border-radius:100px;}
+.new-week-btn{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;color:#1a0a04;font-weight:700;border-radius:100px;padding:8px 18px;font-size:12.5px;cursor:pointer;box-shadow:0 4px 14px rgba(255,90,54,.25);}
+.new-week-btn:hover{filter:brightness(1.08);}
+.rollover-banner{
+  background:linear-gradient(90deg,rgba(255,90,54,.14),rgba(255,154,90,.10));
+  border:1px solid var(--accent-1);border-radius:12px;padding:12px 16px;margin-bottom:18px;
+  display:flex;justify-content:space-between;align-items:center;font-size:13px;flex-wrap:wrap;gap:10px;
+}
+.rollover-banner button{background:var(--text);color:var(--bg);border:none;border-radius:8px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;}
+
+/* KPI strip */
+.kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin-bottom:28px;}
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(3,1fr);}}
+@media(max-width:640px){.kpi-grid{grid-template-columns:repeat(2,1fr);}}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px;position:relative;overflow:hidden;}
+.kpi .bar{position:absolute;top:0;left:0;height:3px;width:100%;}
+.kpi-label{font-size:11.5px;color:var(--muted);margin-bottom:10px;letter-spacing:.02em;}
+.kpi-value{font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600;margin-bottom:6px;}
+.kpi-target-row{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--muted);}
+.kpi-target-row .input-cell{padding:2px 6px;}
+.kpi-target-row .input-cell input{width:60px;}
+.pill{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:100px;margin-top:8px;}
+.pill.good{background:rgba(52,211,153,.12);color:var(--good);}
+.pill.warn{background:rgba(251,191,36,.12);color:var(--warn);}
+.pill.bad{background:rgba(248,113,113,.12);color:var(--bad);}
+
+/* Charts */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px;}
+@media(max-width:980px){.charts-row{grid-template-columns:1fr;}}
+.chart-card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:18px;}
+.chart-card .card-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;flex-wrap:wrap;margin-bottom:6px;}
+.chart-card h3{font-family:'Archivo',sans-serif;font-size:14.5px;margin:0 0 2px;font-weight:600;}
+.chart-card .cap{font-size:11.5px;color:var(--muted);margin-bottom:12px;}
+.change-badge{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:600;padding:3px 9px;border-radius:100px;}
+.change-badge.up{background:rgba(52,211,153,.12);color:var(--good);}
+.change-badge.down{background:rgba(248,113,113,.12);color:var(--bad);}
+.change-badge.flat{background:rgba(133,146,170,.12);color:var(--muted);}
+select.ctrl, .toggle-group{background:var(--panel-2);color:var(--text);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12.5px;font-family:'Inter';margin-bottom:10px;}
+.toggle-group{display:inline-flex;gap:2px;padding:3px;}
+.toggle-group button{background:none;border:none;color:var(--muted);font-size:11.5px;font-weight:600;padding:5px 11px;border-radius:6px;cursor:pointer;}
+.toggle-group button.active{background:linear-gradient(135deg,var(--accent-1),var(--accent-2));color:#1a0a04;}
+.chart-box{position:relative;height:220px;}
+.chart-box.tall{height:250px;}
+
+/* Funnel */
+.funnel{position:relative;padding-left:26px;}
+.spine{position:absolute;left:9px;top:8px;bottom:8px;width:2px;background:linear-gradient(var(--awareness),var(--capture) 33%,var(--setting) 66%,var(--closing));border-radius:2px;}
+.stage{position:relative;margin-bottom:18px;}
+.stage-node{position:absolute;left:-26px;top:18px;width:20px;height:20px;border-radius:50%;background:var(--bg);border:3px solid var(--stage-color);}
+.stage-head{display:flex;align-items:center;justify-content:space-between;background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--stage-color);border-radius:var(--radius) var(--radius) 0 0;padding:14px 18px;cursor:pointer;user-select:none;}
+.stage-head .title{display:flex;align-items:center;gap:10px;}
+.stage-head .title span.label{font-family:'Archivo',sans-serif;font-weight:600;font-size:15px;}
+.stage-head .title span.tag{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--stage-color);font-weight:700;}
+.stage-head .chev{color:var(--muted);transition:transform .2s;}
+.stage.collapsed .chev{transform:rotate(-90deg);}
+.stage-head .meta{font-size:12px;color:var(--muted);}
+.stage-body{background:var(--panel-2);border:1px solid var(--line);border-top:none;border-radius:0 0 var(--radius) var(--radius);overflow-x:auto;}
+.stage.collapsed .stage-body{display:none;}
+
+table.metrics{width:100%;border-collapse:collapse;font-size:13px;min-width:900px;}
+table.metrics th{text-align:left;color:var(--muted);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.06em;padding:14px 12px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.metrics td{padding:13px 12px;border-bottom:1px solid var(--line);vertical-align:middle;}
+table.metrics tr:last-child td{border-bottom:none;}
+table.metrics tr:nth-child(even){background:rgba(255,255,255,.016);}
+table.metrics tr:hover{background:rgba(255,90,54,.055);}
+.metric-name{font-weight:600;font-size:13px;letter-spacing:-0.005em;}
+th.summary-col, td.summary-col{border-left:1px solid var(--line);}
+.input-cell{display:inline-flex;align-items:center;gap:1px;background:var(--panel);border:1px solid transparent;border-radius:7px;padding:3px 7px;transition:.12s;}
+.input-cell:hover{border-color:var(--line);}
+.input-cell:focus-within{border-color:var(--accent-1);background:var(--panel-2);}
+.input-cell .affix{font-family:'IBM Plex Mono',monospace;font-size:11px;color:var(--muted);}
+.input-cell input{width:52px;background:transparent;border:none;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:12.5px;padding:4px 2px;text-align:right;}
+.input-cell input:focus{outline:none;}
+.input-cell input::placeholder{color:#5A4C41;}
+input[type=number]::-webkit-outer-spin-button, input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+input[type=number]{-moz-appearance:textfield;appearance:textfield;}
+.avg-cell{font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13.5px;white-space:nowrap;}
+.target-cell{font-family:'IBM Plex Mono',monospace;color:var(--muted);font-size:12.5px;white-space:nowrap;}
+.status-dot{width:9px;height:9px;border-radius:50%;display:inline-block;box-shadow:0 0 0 3px rgba(255,255,255,.03);}
+.spark{width:78px;height:24px;vertical-align:middle;}
+
+footer{margin-top:30px;color:var(--muted);font-size:11.5px;text-align:center;}
+.reset-btn{background:none;border:1px solid var(--line);color:var(--muted);border-radius:8px;padding:6px 12px;font-size:11.5px;cursor:pointer;font-family:'Inter';}
+.reset-btn:hover{border-color:var(--bad);color:var(--bad);}
+.reset-btn.confirming{border-color:var(--bad);color:var(--bad);background:rgba(248,113,113,.08);}
+
+/* Auth gate */
+.auth-gate{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:var(--bg);
+  background-image:radial-gradient(ellipse 900px 600px at -5% -10%, rgba(180,40,10,.35), transparent 60%),
+    radial-gradient(ellipse 700px 500px at 110% 0%, rgba(120,20,10,.18), transparent 60%);}
+.auth-card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:36px 34px;width:340px;max-width:88vw;text-align:center;}
+.auth-card h2{font-family:'Archivo',sans-serif;font-size:19px;font-weight:800;margin:0 0 8px;}
+.auth-card p{color:var(--muted);font-size:12.5px;margin:0 0 20px;}
+.auth-input{width:100%;background:var(--panel-2);border:1px solid var(--line);color:var(--text);border-radius:10px;padding:11px 14px;font-size:14px;font-family:'IBM Plex Mono',monospace;text-align:center;transition:.15s;}
+.auth-input:focus{outline:none;border-color:var(--accent-1);}
+.auth-input.error{border-color:var(--bad);box-shadow:0 0 0 4px rgba(240,82,58,.22),0 0 26px rgba(240,82,58,.4);animation:shake .4s;}
+.auth-input.success{border-color:var(--good);box-shadow:0 0 0 4px rgba(52,211,153,.22),0 0 30px rgba(52,211,153,.6);}
+@keyframes shake{10%,90%{transform:translateX(-2px);}20%,80%{transform:translateX(4px);}30%,50%,70%{transform:translateX(-8px);}40%,60%{transform:translateX(8px);}}
+.auth-submit{margin-top:14px;width:100%;background:linear-gradient(135deg,var(--accent-1),var(--accent-2));border:none;color:#1a0a04;font-weight:700;border-radius:10px;padding:11px 14px;font-size:13.5px;cursor:pointer;}
+.auth-submit:hover{filter:brightness(1.08);}
+.auth-msg{margin-top:14px;font-size:13px;font-weight:700;min-height:18px;}
+.auth-msg.error{color:var(--bad);}
+.auth-msg.success{color:var(--good);text-shadow:0 0 14px rgba(52,211,153,.75);}
+.wrap.app-locked{display:none;}
+</style>
+</head>
+<body>
+
+<div class="auth-gate" id="authGate">
+  <div class="auth-card">
+    <h2>Private Dashboard</h2>
+    <p>Enter the access password to continue.</p>
+    <input type="password" class="auth-input" id="authInput" placeholder="Password" autocomplete="off">
+    <button class="auth-submit" id="authSubmit">Unlock</button>
+    <div class="auth-msg" id="authMsg"></div>
+  </div>
+</div>
+
+<div class="wrap app-locked" id="appWrap">
+
+  <div class="header">
+    <div>
+      <div class="brand-logo">
+        <svg viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" aria-label="educatr.co logo">
+          <rect x="10" y="10" width="22" height="80" rx="8" fill="#FFFFFF"/>
+          <rect x="10" y="10" width="80" height="22" rx="8" fill="#FFFFFF"/>
+          <rect x="10" y="39" width="60" height="22" rx="8" fill="#FFFFFF"/>
+          <rect x="10" y="68" width="80" height="22" rx="8" fill="#FFFFFF"/>
+        </svg>
+        <span class="word" id="brandWord" title="Right-click to rename">educatr.co</span>
+      </div>
+      <div class="eyebrow"><span class="pulse"></span>CALL FUNNEL &middot; MULTI-CLIENT</div>
+      <h1>Growth Engine <span class="grad">Dashboard</span></h1>
+    </div>
+  </div>
+
+  <div class="sources-row" id="sourcesRow"></div>
+
+  <div class="client-row" id="clientRow"></div>
+
+  <div id="rolloverBanner" style="display:none;"></div>
+
+  <div class="week-nav">
+    <button class="arrow" id="prevWeek">&lsaquo;</button>
+    <div class="week-label" id="weekLabel"></div>
+    <button class="arrow" id="nextWeek">&rsaquo;</button>
+    <button class="new-week-btn" id="newWeekBtn">+ New week</button>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="charts-row">
+    <div class="chart-card">
+      <div class="card-head">
+        <div><h3>Metric trend</h3><div class="cap">Track one metric over time</div></div>
+        <span class="change-badge" id="changeBadge"></span>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
+        <select class="ctrl" id="trendSelect"></select>
+        <div class="toggle-group" id="trendRangeToggle">
+          <button data-mode="week" class="active">This week</button>
+          <button data-mode="all">All time</button>
+        </div>
+      </div>
+      <div class="chart-box"><canvas id="trendChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-head">
+        <div><h3>Stage health over time</h3><div class="cap">% of metrics on-target, per stage, per week</div></div>
+      </div>
+      <div class="chart-box"><canvas id="healthChart"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-head">
+        <div><h3>Call outcomes</h3><div class="cap">Booked calls, by result</div></div>
+      </div>
+      <select class="ctrl" id="pieRangeSelect1"></select>
+      <div class="chart-box"><canvas id="outcomePie"></canvas></div>
+    </div>
+
+    <div class="chart-card">
+      <div class="card-head">
+        <div><h3>Cash collected by day</h3><div class="cap">Core offer</div></div>
+      </div>
+      <select class="ctrl" id="pieRangeSelect2"></select>
+      <div class="chart-box"><canvas id="cashPie"></canvas></div>
+    </div>
+  </div>
+
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+    <h2 style="font-family:'Archivo',sans-serif;font-size:17px;margin:0;">Funnel detail</h2>
+    <button class="reset-btn" id="resetBtn">Reset this client's data</button>
+  </div>
+
+  <div class="funnel"><div class="spine"></div><div id="stages"></div></div>
+
+  <footer>Growth Engine Dashboard &middot; data saved to this browser's local storage</footer>
+</div>
+
+<script>
+/* ============ METRIC TEMPLATE (shared structure, values differ per client/week) ============ */
+const STAGES = [
+  {id:'awareness', label:'TOFU Awareness', color:'var(--awareness)', raw:'#E8963E'},
+  {id:'capture',   label:'TOFU Capture',   color:'var(--capture)',   raw:'#4E8CFF'},
+  {id:'setting',   label:'Sales Setting',  color:'var(--setting)',   raw:'#2FB88B'},
+  {id:'closing',   label:'BOFU Closing',   color:'var(--closing)',   raw:'#E5484D'},
+];
+const METRIC_META = [
+  {id:'ad_spend',   stage:'awareness', label:'Ad Spend Meta', owner:'Tom', format:'currency', dir:'higher', target:null},
+  {id:'cpc',        stage:'awareness', label:'Cost Per Click', owner:'Tom', format:'currency', dir:'lower', target:1.00},
+  {id:'cpl',        stage:'awareness', label:'Cost Per Lead', owner:'Tom', format:'currency', dir:'lower', target:100},
+  {id:'cpbc',       stage:'awareness', label:'Cost Per Booked Call', owner:'Tom', format:'currency', dir:'lower', target:null},
+  {id:'roas',       stage:'awareness', label:'ROAS', owner:'Tom', format:'multiple', dir:'higher', target:7},
+  {id:'ctr',        stage:'awareness', label:'CTR Link', owner:'Tom', format:'percent', dir:'higher', target:2.00},
+  {id:'hook',       stage:'awareness', label:'Hook Rate', owner:'Tom', format:'percent', dir:'higher', target:40},
+  {id:'lp_connect',    stage:'capture', label:'Landing Page Connect Rate', owner:'Derek', format:'percent', dir:'higher', target:80},
+  {id:'lp_app',        stage:'capture', label:'Landing Page Click &rarr; Application Rate', owner:'Derek', format:'percent', dir:'higher', target:4},
+  {id:'vsl_visits',    stage:'capture', label:'VSL Page Visits (ads+organic)', owner:'Derek', format:'number', dir:'higher', target:null},
+  {id:'vsl_play',      stage:'capture', label:'VSL Play Rate (ads+organic)', owner:'Derek', format:'percent', dir:'higher', target:null},
+  {id:'vsl_engage',    stage:'capture', label:'VSL Engagement Rate (ads+organic)', owner:'Derek', format:'percent', dir:'higher', target:40},
+  {id:'apps_submitted',stage:'capture', label:'Applications Submitted (ads+organic)', owner:'Derek', format:'number', dir:'higher', target:null},
+  {id:'app_complete',  stage:'capture', label:'Application Completion Rate', owner:'Derek', format:'percent', dir:'higher', target:50},
+  {id:'app_booking',   stage:'capture', label:'Application &rarr; Booking Rate', owner:'Derek', format:'percent', dir:'higher', target:80},
+  {id:'email_open',    stage:'capture', label:'Main List Email Open Rate', owner:'Derek', format:'percent', dir:'higher', target:40},
+  {id:'email_ctr',     stage:'capture', label:'Main List Email Click Through Rate', owner:'Derek', format:'percent', dir:'higher', target:3},
+  {id:'app_quality',   stage:'capture', label:'Quality Of Applications (1-5)', owner:'Derek', format:'rating', dir:'higher', target:4},
+  {id:'dials',       stage:'setting', label:'Dials', owner:'Ivan', format:'number', dir:'higher', target:null},
+  {id:'calls_cal',   stage:'setting', label:'Total Calls On Calendar', owner:'Ivan', format:'number', dir:'higher', target:null},
+  {id:'calls_show',  stage:'setting', label:'Total Calls Show', owner:'Ivan', format:'number', dir:'higher', target:null},
+  {id:'show_rate',   stage:'setting', label:'Show Up Rate', owner:'Ivan', format:'percent', dir:'higher', target:80},
+  {id:'dq_rate',     stage:'closing', label:'Closing DQ Rate', owner:'Ivan', format:'percent', dir:'lower', target:15},
+  {id:'close_rate',  stage:'closing', label:'Close Rate', owner:'Ivan', format:'percent', dir:'higher', target:60},
+  {id:'cash_per_call',stage:'closing',label:'Cash Per Qualified Live Call', owner:'Ivan', format:'currency', dir:'higher', target:null},
+  {id:'aov',         stage:'closing', label:'AOV', owner:'Ivan', format:'currency', dir:'higher', target:7000},
+  {id:'units',       stage:'closing', label:'Sales Units - Core Offer', owner:'Ivan', format:'number', dir:'higher', target:null},
+  {id:'depos',       stage:'closing', label:'Depos', owner:'Ivan', format:'number', dir:'higher', target:null},
+  {id:'cash',        stage:'closing', label:'Cash Collected - Core Offer', owner:'Ivan', format:'currency', dir:'higher', target:null},
+];
+function blankValues(){ const o={}; METRIC_META.forEach(m=> o[m.id]=[null,null,null,null,null,null,null]); return o; }
+
+/* ============ DATE HELPERS ============ */
+function toISO(d){ return d.toISOString().slice(0,10); }
+function addDays(iso, n){ const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return toISO(d); }
+function dateLabel(iso){ const d=new Date(iso+'T00:00:00Z'); return d.toLocaleDateString('en-US',{month:'short',day:'numeric',timeZone:'UTC'}); }
+function weekdayLabel(iso){ const d=new Date(iso+'T00:00:00Z'); return d.toLocaleDateString('en-US',{weekday:'short',timeZone:'UTC'}); }
+function weekDates(startISO){ return [0,1,2,3,4,5,6].map(i=>addDays(startISO,i)); }
+function todayISO(){ return toISO(new Date()); }
+
+/* ============ SEED DATA ============ */
+function seedDefaultClient(){
+  const start = '2026-07-08';
+  const w1 = {start, metrics: blankValues()};
+  w1.metrics.ad_spend = [112.71,98.15,null,null,null,null,null];
+  w1.metrics.cpc = [0.52,1.66,null,null,null,null,null];
+  w1.metrics.cpl = [22.54,19.63,null,null,null,null,null];
+  w1.metrics.ctr = [1.17,3.03,null,null,null,null,null];
+  w1.metrics.hook = [25.70,43.80,null,null,null,null,null];
+  w1.metrics.lp_app = [23.10,10,null,null,null,null,null];
+  w1.metrics.vsl_visits = [24,10,null,null,null,null,null];
+  w1.metrics.vsl_play = [3,53,null,null,null,null,null];
+  w1.metrics.vsl_engage = [2.11,11.62,null,null,null,null,null];
+  w1.metrics.apps_submitted = [6,1,null,null,null,null,null];
+  w1.metrics.app_complete = [57.10,27.30,null,null,null,null,null];
+  w1.metrics.app_booking = [80,100,null,null,null,null,null];
+  w1.metrics.calls_cal = [0,3,null,null,null,null,null];
+  w1.metrics.calls_show = [0,3,null,null,null,null,null];
+  w1.metrics.show_rate = [100,100,null,null,null,null,null];
+  w1.metrics.dq_rate = [0,0,null,null,null,null,null];
+  w1.metrics.close_rate = [0,0,null,null,null,null,null];
+  w1.metrics.cash = [0,0,0,0,8000,null,null];
+  return {id:'default', name:'EDUCATR', weeks:[w1]};
+}
+let CLIENTS = [seedDefaultClient()];
+let currentClientId = 'default';
+let currentWeekIndex = 0;
+let trendMode = 'week';
+
+/* ============ STORAGE (browser localStorage) ============ */
+const STORE_KEY = 'growth-dashboard-clients-v2';
+let saveTimer=null;
+function queueSave(){
+  clearTimeout(saveTimer);
+  saveTimer=setTimeout(()=>{
+    try{ localStorage.setItem(STORE_KEY, JSON.stringify({CLIENTS, currentClientId})); }
+    catch(e){ console.error('save failed', e); }
+  },400);
+}
+function loadStored(){
+  try{
+    const raw = localStorage.getItem(STORE_KEY);
+    if(raw){
+      const payload = JSON.parse(raw);
+      if(payload.CLIENTS && payload.CLIENTS.length){ CLIENTS = payload.CLIENTS; currentClientId = payload.currentClientId || CLIENTS[0].id; }
+    }
+  }catch(e){ /* nothing stored yet, use seed */ }
+}
+
+/* ============ BRAND NAME (right-click to rename) ============ */
+const BRAND_KEY = 'growth-dashboard-brand-name';
+function loadBrandName(){
+  try{
+    const saved = localStorage.getItem(BRAND_KEY);
+    if(saved) document.getElementById('brandWord').textContent = saved;
+  }catch(e){ /* ignore */ }
+}
+function initBrandRename(){
+  const el = document.getElementById('brandWord');
+  el.addEventListener('contextmenu', e=>{
+    e.preventDefault();
+    const next = prompt('Rename', el.textContent);
+    if(next && next.trim()){
+      el.textContent = next.trim();
+      try{ localStorage.setItem(BRAND_KEY, next.trim()); }catch(err){ /* ignore */ }
+    }
+  });
+}
+
+function currentClient(){ return CLIENTS.find(c=>c.id===currentClientId) || CLIENTS[0]; }
+function currentWeek(){
+  const c = currentClient();
+  if(currentWeekIndex >= c.weeks.length) currentWeekIndex = c.weeks.length-1;
+  return c.weeks[currentWeekIndex];
+}
+
+/* ============ FORMATTING ============ */
+function fmt(v, format){
+  if(v===null || v===undefined || isNaN(v)) return '&mdash;';
+  switch(format){
+    case 'currency': return '$'+Number(v).toLocaleString(undefined,{minimumFractionDigits:v%1===0?0:2,maximumFractionDigits:2});
+    case 'percent': return Number(v).toFixed(2).replace(/\.00$/,'')+'%';
+    case 'multiple': return Number(v).toFixed(1)+'x';
+    case 'rating': return Number(v).toFixed(1)+'/5';
+    default: return Number(v).toLocaleString();
+  }
+}
+function avg(values){ const n=values.filter(v=>v!==null&&v!==undefined&&!isNaN(v)); if(!n.length) return null; return n.reduce((a,b)=>a+b,0)/n.length; }
+function statusColor(values, target, dir){
+  const a=avg(values);
+  if(a===null||target===null||target===undefined) return 'muted';
+  const ratio = dir==='higher' ? a/target : target/a;
+  if(ratio>=1) return 'good'; if(ratio>=0.75) return 'warn'; return 'bad';
+}
+function statusHex(s){ return s==='good'?'var(--good)':s==='warn'?'var(--warn)':s==='bad'?'var(--bad)':'var(--muted)'; }
+
+/* ============ TARGETS (per client, editable; falls back to metric default) ============ */
+function getTarget(c, meta){
+  if(c.targets && Object.prototype.hasOwnProperty.call(c.targets, meta.id)) return c.targets[meta.id];
+  return meta.target;
+}
+function setClientTarget(metricId, rawValue){
+  const c=currentClient();
+  if(!c.targets) c.targets={};
+  c.targets[metricId] = rawValue===''? null : parseFloat(rawValue);
+  queueSave();
+}
+function editableNumberHTML(value, format, attrs){
+  const prefix = format==='currency' ? '<span class="affix">$</span>' : '';
+  const suffix = format==='percent' ? '<span class="affix">%</span>' : format==='multiple' ? '<span class="affix">x</span>' : '';
+  const val = (value===null||value===undefined) ? '' : value;
+  return `<div class="input-cell">${prefix}<input type="number" step="any" ${attrs} value="${val}" placeholder="&ndash;">${suffix}</div>`;
+}
+
+/* ============ CLIENT CONTEXT MENU ============ */
+function closeCtxMenu(){
+  const m=document.getElementById('ctxMenu');
+  if(m) m.remove();
+  document.removeEventListener('click', closeCtxMenu);
+}
+function openClientCtxMenu(e, c){
+  closeCtxMenu();
+  const menu=document.createElement('div');
+  menu.id='ctxMenu'; menu.className='ctx-menu';
+  menu.style.left = e.clientX+'px';
+  menu.style.top = e.clientY+'px';
+  menu.innerHTML = `<button data-action="rename">Rename client</button><button data-action="delete" class="danger">Delete client</button>`;
+  document.body.appendChild(menu);
+  menu.querySelector('[data-action="rename"]').addEventListener('click', ()=>{
+    closeCtxMenu();
+    const next = prompt('Rename client', c.name);
+    if(next && next.trim()){ c.name = next.trim(); queueSave(); renderClientTabs(); }
+  });
+  menu.querySelector('[data-action="delete"]').addEventListener('click', ()=>{
+    closeCtxMenu();
+    if(CLIENTS.length<=1){ alert('You need at least one client — add another before deleting this one.'); return; }
+    if(!confirm(`Delete "${c.name}" and all of its data? This can't be undone.`)) return;
+    CLIENTS = CLIENTS.filter(cl=>cl.id!==c.id);
+    if(currentClientId===c.id){ currentClientId=CLIENTS[0].id; currentWeekIndex=CLIENTS[0].weeks.length-1; }
+    queueSave(); renderAll();
+  });
+  setTimeout(()=>document.addEventListener('click', closeCtxMenu), 0);
+}
+
+/* ============ RENDER: client tabs ============ */
+let addingClient=false;
+function renderClientTabs(){
+  const row = document.getElementById('clientRow');
+  row.innerHTML = '';
+  CLIENTS.forEach(c=>{
+    const b=document.createElement('button');
+    b.className='client-tab'+(c.id===currentClientId?' active':'');
+    b.textContent=c.name;
+    b.title='Right-click for options';
+    b.addEventListener('click',()=>{ currentClientId=c.id; currentWeekIndex=c.weeks.length-1; queueSave(); renderAll(); });
+    b.addEventListener('contextmenu', e=>{
+      e.preventDefault();
+      openClientCtxMenu(e, c);
+    });
+    row.appendChild(b);
+  });
+  if(addingClient){
+    const form=document.createElement('div');
+    form.className='add-client-form';
+    form.innerHTML = `<input type="text" id="newClientInput" placeholder="Client name" autofocus><button id="confirmAddClient">Add</button>`;
+    row.appendChild(form);
+    document.getElementById('confirmAddClient').addEventListener('click', addClientNow);
+    document.getElementById('newClientInput').addEventListener('keydown', e=>{ if(e.key==='Enter') addClientNow(); });
+  } else {
+    const addBtn=document.createElement('button');
+    addBtn.className='add-client-btn'; addBtn.textContent='+ Add client';
+    addBtn.addEventListener('click',()=>{ addingClient=true; renderClientTabs(); document.getElementById('newClientInput').focus(); });
+    row.appendChild(addBtn);
+  }
+}
+function addClientNow(){
+  const input=document.getElementById('newClientInput');
+  const name=(input.value||'').trim();
+  if(!name){ addingClient=false; renderClientTabs(); return; }
+  const id='client-'+Date.now();
+  CLIENTS.push({id, name, weeks:[{start:'2026-07-08', metrics: blankValues()}]});
+  currentClientId=id; currentWeekIndex=0; addingClient=false;
+  queueSave(); renderAll();
+}
+
+/* ============ RENDER: week nav + rollover banner ============ */
+function renderWeekNav(){
+  const c=currentClient();
+  const w=currentWeek();
+  const dates=weekDates(w.start);
+  document.getElementById('weekLabel').textContent = `Week of ${dateLabel(dates[0])} – ${dateLabel(dates[6])}, ${new Date(dates[0]).getUTCFullYear()}`;
+  document.getElementById('prevWeek').disabled = currentWeekIndex===0;
+  document.getElementById('nextWeek').disabled = currentWeekIndex===c.weeks.length-1;
+
+  const lastWeek = c.weeks[c.weeks.length-1];
+  const lastWeekEnd = weekDates(lastWeek.start)[6];
+  const banner = document.getElementById('rolloverBanner');
+  if(todayISO() > lastWeekEnd){
+    banner.style.display='flex';
+    banner.className='rollover-banner';
+    banner.innerHTML = `<span>📅 <b>${dateLabel(lastWeekEnd)}</b> has passed and this week's tracking is closed out. Ready to start the next week?</span><button id="rolloverStart">Start week of ${dateLabel(addDays(lastWeekEnd,1))}</button>`;
+    document.getElementById('rolloverStart').addEventListener('click', createNewWeek);
+  } else {
+    banner.style.display='none';
+  }
+}
+function createNewWeek(){
+  const c=currentClient();
+  const lastWeek=c.weeks[c.weeks.length-1];
+  const newStart=addDays(lastWeek.start,7);
+  c.weeks.push({start:newStart, metrics: blankValues()});
+  currentWeekIndex=c.weeks.length-1;
+  queueSave(); renderAll();
+}
+document.getElementById('prevWeek').addEventListener('click',()=>{ if(currentWeekIndex>0){currentWeekIndex--; renderAll();} });
+document.getElementById('nextWeek').addEventListener('click',()=>{ const c=currentClient(); if(currentWeekIndex<c.weeks.length-1){currentWeekIndex++; renderAll();} });
+document.getElementById('newWeekBtn').addEventListener('click', createNewWeek);
+
+/* ============ RENDER: KPIs ============ */
+const KPI_IDS=['ad_spend','cpl','show_rate','close_rate','aov','cash'];
+function renderKPIs(){
+  const c=currentClient();
+  const w=currentWeek();
+  const grid=document.getElementById('kpiGrid'); grid.innerHTML='';
+  KPI_IDS.forEach(id=>{
+    const meta=METRIC_META.find(m=>m.id===id);
+    const values=w.metrics[id];
+    const target=getTarget(c,meta);
+    const a=avg(values); const status=statusColor(values,target,meta.dir);
+    const stageColor=STAGES.find(s=>s.id===meta.stage).color;
+    const card=document.createElement('div'); card.className='kpi';
+    card.innerHTML=`<div class="bar" style="background:${stageColor}"></div>
+      <div class="kpi-label">${meta.label}</div>
+      <div class="kpi-value">${fmt(a,meta.format)}</div>
+      <div class="kpi-target-row"><span>target</span>${editableNumberHTML(target, meta.format, `class="kpi-target-input" data-metric="${meta.id}"`)}</div>
+      <div class="pill ${status}">${status==='muted'?'no target':status==='good'?'on target':status==='warn'?'close':'behind'}</div>`;
+    grid.appendChild(card);
+  });
+  grid.querySelectorAll('.kpi-target-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const id=e.target.dataset.metric;
+      setClientTarget(id, e.target.value);
+      renderKPIs(); renderStages(); renderCharts();
+      const el=document.querySelector(`.kpi-target-input[data-metric="${id}"]`);
+      if(el) el.focus();
+    });
+  });
+}
+
+/* ============ RENDER: stage tables ============ */
+function sparkPoints(values){
+  const nums=values.map(v=>v===null||v===undefined?null:Number(v));
+  const real=nums.filter(v=>v!==null);
+  if(real.length<2) return null;
+  const min=Math.min(...real),max=Math.max(...real); const range=max-min||1;
+  const w=70,h=22,step=w/(nums.length-1); let pts=[];
+  nums.forEach((v,i)=>{ if(v===null)return; pts.push(`${i*step},${h-((v-min)/range)*h}`); });
+  return pts.join(' ');
+}
+function renderStages(){
+  const c=currentClient();
+  const w=currentWeek();
+  const dates=weekDates(w.start);
+  const container=document.getElementById('stages'); container.innerHTML='';
+  STAGES.forEach(stage=>{
+    const metas=METRIC_META.filter(m=>m.stage===stage.id);
+    const div=document.createElement('div'); div.className='stage'; div.style.setProperty('--stage-color',stage.color);
+    const rows=metas.map(meta=>{
+      const values=w.metrics[meta.id];
+      const target=getTarget(c,meta);
+      const a=avg(values); const status=statusColor(values,target,meta.dir);
+      const dayInputs=values.map((v,i)=>`<td>${editableNumberHTML(v, meta.format, `data-metric="${meta.id}" data-day="${i}"`)}</td>`).join('');
+      const targetCell=editableNumberHTML(target, meta.format, `class="stage-target-input" data-metric="${meta.id}"`);
+      const spark=sparkPoints(values);
+      const sparkSvg=spark?`<svg class="spark" viewBox="0 0 70 22"><polyline points="${spark}" fill="none" stroke="${stage.raw}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`:'<span style="color:var(--muted);font-size:11px;">not enough data</span>';
+      return `<tr><td><div class="metric-name">${meta.label}</div></td>${dayInputs}<td class="avg-cell summary-col">${fmt(a,meta.format)}</td><td class="target-cell">${targetCell}</td><td><span class="status-dot" style="background:${statusHex(status)}"></span></td><td>${sparkSvg}</td></tr>`;
+    }).join('');
+    div.innerHTML=`<div class="stage-node"></div>
+      <div class="stage-head" data-stage="${stage.id}">
+        <div class="title"><span class="label">${stage.label}</span><span class="tag">${metas.length} metrics</span></div>
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="meta">${metas.filter(m=>statusColor(w.metrics[m.id],getTarget(c,m),m.dir)==='good').length} on target</div>
+          <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="stage-body"><table class="metrics"><thead><tr>
+        <th style="min-width:210px;">Metric</th>
+        ${dates.map(d=>`<th>${weekdayLabel(d)}<br><span style="font-weight:400;">${dateLabel(d)}</span></th>`).join('')}
+        <th class="summary-col">Avg</th><th>Target</th><th></th><th>Trend</th>
+      </tr></thead><tbody>${rows}</tbody></table></div>`;
+    container.appendChild(div);
+    div.querySelector('.stage-head').addEventListener('click',()=>div.classList.toggle('collapsed'));
+  });
+  container.querySelectorAll('input[data-day]').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const id=e.target.dataset.metric, day=parseInt(e.target.dataset.day);
+      currentWeek().metrics[id][day] = e.target.value===''?null:parseFloat(e.target.value);
+      queueSave();
+      const activeId=id, activeDay=day;
+      renderKPIs(); renderStages(); renderCharts();
+      const el=document.querySelector(`input[data-metric="${activeId}"][data-day="${activeDay}"]`);
+      if(el) el.focus();
+    });
+  });
+  container.querySelectorAll('.stage-target-input').forEach(inp=>{
+    inp.addEventListener('input', e=>{
+      const id=e.target.dataset.metric;
+      setClientTarget(id, e.target.value);
+      renderKPIs(); renderStages(); renderCharts();
+      const el=document.querySelector(`.stage-target-input[data-metric="${id}"]`);
+      if(el) el.focus();
+    });
+  });
+}
+
+/* ============ CHARTS ============ */
+let trendChart, healthChart, outcomePie, cashPie;
+
+function buildTrendSelect(){
+  const sel=document.getElementById('trendSelect');
+  sel.innerHTML = METRIC_META.map(m=>`<option value="${m.id}">${m.label}</option>`).join('');
+  sel.value='cpl';
+  sel.addEventListener('change', renderCharts);
+}
+document.getElementById('trendRangeToggle').addEventListener('click', e=>{
+  if(e.target.tagName!=='BUTTON') return;
+  trendMode = e.target.dataset.mode;
+  document.querySelectorAll('#trendRangeToggle button').forEach(b=>b.classList.toggle('active', b===e.target));
+  renderCharts();
+});
+
+function allTimeSeries(metricId){
+  const c=currentClient(); let labels=[]; let data=[];
+  c.weeks.forEach(w=>{
+    const dates=weekDates(w.start);
+    dates.forEach((d,i)=>{ labels.push(dateLabel(d)); data.push(w.metrics[metricId][i]); });
+  });
+  return {labels,data};
+}
+
+function buildPieRangeOptions(){
+  const c=currentClient();
+  const opts = c.weeks.map((w,i)=>{
+    const dates=weekDates(w.start);
+    return `<option value="${i}">Week of ${dateLabel(dates[0])}</option>`;
+  }).join('') + `<option value="all">All weeks combined</option>`;
+  ['pieRangeSelect1','pieRangeSelect2'].forEach(id=>{
+    const sel=document.getElementById(id);
+    const prevVal = sel.value;
+    sel.innerHTML = opts;
+    sel.value = (prevVal && [...sel.options].some(o=>o.value===prevVal)) ? prevVal : String(currentWeekIndex);
+  });
+}
+
+function renderCharts(){
+  const c=currentClient();
+  const w=currentWeek();
+  const meta=METRIC_META.find(m=>m.id===document.getElementById('trendSelect').value);
+  const trendTarget=getTarget(c,meta);
+
+  // ---- Metric trend chart ----
+  let labels, dataVals, targetLine;
+  if(trendMode==='week'){
+    const dates=weekDates(w.start);
+    labels = dates.map(weekdayLabel);
+    dataVals = w.metrics[meta.id];
+  } else {
+    const series = allTimeSeries(meta.id);
+    labels = series.labels; dataVals = series.data;
+  }
+  targetLine = trendTarget===null ? [] : labels.map(()=>trendTarget);
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'), {
+    type:'line',
+    data:{ labels, datasets:[
+      {label:'Actual', data:dataVals, borderColor:'#FF5A36', backgroundColor:'rgba(255,90,54,.15)', tension:.3, spanGaps:true, fill:true, pointRadius:trendMode==='all'?1:3},
+      ...(trendTarget!==null ? [{label:'Target', data:targetLine, borderColor:'#8592AA', borderDash:[5,4], pointRadius:0, fill:false}] : [])
+    ]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8592AA', font:{size:10.5}}}},
+      scales:{x:{ticks:{color:'#8592AA', font:{size:9.5}, maxRotation:0, autoSkip:true}, grid:{color:'#1E2C46'}},
+              y:{ticks:{color:'#8592AA', font:{size:10.5}}, grid:{color:'#1E2C46'}}}}
+  });
+
+  // week-over-week change badge (compares this week's avg to previous week's avg, for the current client)
+  const badge=document.getElementById('changeBadge');
+  if(currentWeekIndex>0){
+    const prevAvg = avg(c.weeks[currentWeekIndex-1].metrics[meta.id]);
+    const thisAvg = avg(w.metrics[meta.id]);
+    if(prevAvg!==null && thisAvg!==null && prevAvg!==0){
+      const pct = ((thisAvg-prevAvg)/Math.abs(prevAvg))*100;
+      const improving = meta.dir==='higher' ? pct>0 : pct<0;
+      badge.className = 'change-badge ' + (Math.abs(pct)<1 ? 'flat' : improving ? 'up' : 'down');
+      badge.textContent = (pct>0?'+':'') + pct.toFixed(0) + '% vs last week';
+    } else { badge.className='change-badge flat'; badge.textContent='no prior data'; }
+  } else { badge.className='change-badge flat'; badge.textContent='first week tracked'; }
+
+  // ---- Stage health over time ----
+  const weekLabels = c.weeks.map(wk=>dateLabel(wk.start));
+  const stageDatasets = STAGES.map(stage=>{
+    const metas = METRIC_META.filter(m=>m.stage===stage.id);
+    const pctPerWeek = c.weeks.map(wk=>{
+      const withTarget = metas.filter(m=>getTarget(c,m)!==null);
+      if(!withTarget.length) return null;
+      const onTarget = withTarget.filter(m=>statusColor(wk.metrics[m.id], getTarget(c,m), m.dir)==='good').length;
+      return Math.round((onTarget/withTarget.length)*100);
+    });
+    return {label:stage.label, data:pctPerWeek, borderColor:stage.raw, backgroundColor:stage.raw, tension:.3, spanGaps:true, pointRadius:3};
+  });
+  if(healthChart) healthChart.destroy();
+  healthChart = new Chart(document.getElementById('healthChart'), {
+    type:'line',
+    data:{labels:weekLabels, datasets:stageDatasets},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:'bottom', labels:{color:'#8592AA', font:{size:10}, boxWidth:10}}},
+      scales:{x:{ticks:{color:'#8592AA', font:{size:10}}, grid:{color:'#1E2C46'}},
+              y:{min:0, max:100, ticks:{color:'#8592AA', font:{size:10}, callback:v=>v+'%'}, grid:{color:'#1E2C46'}}}}
+  });
+
+  // ---- Pie charts (respect date-range selectors) ----
+  buildPieRangeOptions();
+  const range1 = document.getElementById('pieRangeSelect1').value;
+  const range2 = document.getElementById('pieRangeSelect2').value;
+
+  function weeksInRange(rangeVal){ return rangeVal==='all' ? c.weeks : [c.weeks[parseInt(rangeVal)]]; }
+
+  // Call outcomes pie
+  const weeksForOutcome = weeksInRange(range1);
+  let calls=0, shows=0, dqSum=0, closeSum=0, count=0;
+  weeksForOutcome.forEach(wk=>{
+    calls += (wk.metrics.calls_cal||[]).reduce((a,b)=>a+(b||0),0);
+    shows += (wk.metrics.calls_show||[]).reduce((a,b)=>a+(b||0),0);
+    const dqA = avg(wk.metrics.dq_rate); const clA = avg(wk.metrics.close_rate);
+    if(dqA!==null){ dqSum+=dqA; count++; }
+    if(clA!==null){ closeSum+=clA; }
+  });
+  const dqRateAvg = count? dqSum/count : 0;
+  const closeRateAvg = count? closeSum/count : 0;
+  const noShow=Math.max(calls-shows,0);
+  const dq=Math.round(shows*(dqRateAvg/100));
+  const closed=Math.round(shows*(closeRateAvg/100));
+  const openPipe=Math.max(shows-dq-closed,0);
+  if(outcomePie) outcomePie.destroy();
+  outcomePie = new Chart(document.getElementById('outcomePie'), {
+    type:'doughnut',
+    data:{labels:['Closed','Disqualified','No-show','Open / pipeline'], datasets:[{data:[closed,dq,noShow,openPipe], backgroundColor:['#34D399','#E5484D','#FBBF24','#3E7BFA'], borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{color:'#8592AA', font:{size:10}, boxWidth:10}}}}
+  });
+
+  // Cash pie
+  const weeksForCash = weeksInRange(range2);
+  let cashLabels=[], cashData=[];
+  weeksForCash.forEach(wk=>{
+    const dates=weekDates(wk.start);
+    dates.forEach((d,i)=>{ cashLabels.push(dateLabel(d)); cashData.push(wk.metrics.cash[i]||0); });
+  });
+  if(cashPie) cashPie.destroy();
+  cashPie = new Chart(document.getElementById('cashPie'), {
+    type:'pie',
+    data:{labels:cashLabels, datasets:[{data:cashData, backgroundColor:['#E8963E','#3E7BFA','#2FB88B','#E5484D','#F0B429','#8592AA','#6D7A93','#B784F0','#4FD1C5','#F472B6','#60A5FA','#FCA5A5','#A3E635','#FDE68A'], borderWidth:0}]},
+    options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{position:'bottom', labels:{color:'#8592AA', font:{size:9.5}, boxWidth:8}}}}
+  });
+}
+document.getElementById('pieRangeSelect1').addEventListener('change', renderCharts);
+document.getElementById('pieRangeSelect2').addEventListener('change', renderCharts);
+
+/* ============ RESET (safe two-step, no window.confirm) ============ */
+let resetArmed=false, resetTimer=null;
+document.getElementById('resetBtn').addEventListener('click', (e)=>{
+  if(!resetArmed){
+    resetArmed=true; e.target.textContent='Click again to confirm'; e.target.classList.add('confirming');
+    resetTimer=setTimeout(()=>{ resetArmed=false; e.target.textContent="Reset this client's data"; e.target.classList.remove('confirming'); }, 3000);
+    return;
+  }
+  clearTimeout(resetTimer); resetArmed=false;
+  e.target.textContent="Reset this client's data"; e.target.classList.remove('confirming');
+  const c=currentClient();
+  c.weeks = [{start:'2026-07-08', metrics: blankValues()}];
+  currentWeekIndex=0;
+  queueSave(); renderAll();
+});
+
+/* ============ RENDER ALL ============ */
+function renderAll(){
+  renderClientTabs();
+  renderWeekNav();
+  renderKPIs();
+  renderStages();
+  renderCharts();
+}
+
+/* ============ AUTH GATE ============ */
+const APP_PASSWORD = 'KingCallFunnels$1mill';
+const AUTH_KEY = 'growth-dashboard-authed';
+function isAuthed(){
+  try{ return sessionStorage.getItem(AUTH_KEY)==='true'; }catch(e){ return false; }
+}
+function unlockApp(){
+  document.getElementById('authGate').style.display='none';
+  document.getElementById('appWrap').classList.remove('app-locked');
+  startApp();
+}
+function attemptUnlock(){
+  const input=document.getElementById('authInput');
+  const msg=document.getElementById('authMsg');
+  if(input.value===APP_PASSWORD){
+    input.classList.remove('error'); input.classList.add('success');
+    msg.className='auth-msg success'; msg.textContent='Access granted. Welcome in.';
+    try{ sessionStorage.setItem(AUTH_KEY,'true'); }catch(e){ /* ignore */ }
+    setTimeout(unlockApp, 700);
+  } else {
+    input.classList.remove('success'); input.classList.add('error');
+    msg.className='auth-msg error'; msg.textContent='Incorrect password. Access denied — nice try, fraud.';
+    input.value='';
+    setTimeout(()=>input.classList.remove('error'), 400);
+  }
+}
+document.getElementById('authSubmit').addEventListener('click', attemptUnlock);
+document.getElementById('authInput').addEventListener('keydown', e=>{ if(e.key==='Enter') attemptUnlock(); });
+
+/* ============ INIT ============ */
+function startApp(){
+  loadStored();
+  loadBrandName();
+  initBrandRename();
+  buildTrendSelect();
+  renderAll();
+}
+if(isAuthed()) unlockApp();
+</script>
+<script src="integrations.js" defer></script>
+</body>
+</html>

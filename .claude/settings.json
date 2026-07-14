@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm *)",
+      "Bash(node *)",
+      "Read",
+      "Write",
+      "Edit"
+    ]
+  }
+}
