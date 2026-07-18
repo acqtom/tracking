@@ -17,7 +17,12 @@ router.get('/status', (req, res) => {
   for(const platform of PLATFORMS){
     const token = tokens[platform];
     if(!token){
-      result[platform] = { connected: false };
+      // Typeform PAT in env counts as connected even without a stored OAuth token
+      if(platform === 'typeform' && process.env.TYPEFORM_PAT){
+        result[platform] = { connected: true, expired: false, account: { name: 'PAT' } };
+      } else {
+        result[platform] = { connected: false };
+      }
       continue;
     }
     // Only report "expired" when there's no way to silently refresh (Meta, or a

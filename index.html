@@ -65,6 +65,24 @@ body{
 .chip.expired .cdot{background:var(--bad);}
 .chip b{color:var(--ink);font-weight:600;}
 
+/* ── Integration modal ── */
+.int-modal{position:fixed;inset:0;z-index:8000;background:rgba(0,0,0,.32);display:flex;align-items:center;justify-content:center;}
+.int-card{background:linear-gradient(155deg,#F4F4F5,#E8E8EA);border:1px solid #E2E2E4;border-radius:14px;padding:28px 32px;min-width:320px;max-width:480px;width:90%;box-shadow:inset 0 1px 0 rgba(255,255,255,.85),0 8px 32px rgba(0,0,0,.14);}
+.int-title{font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;}
+.int-sub{font-size:12px;color:var(--card-muted);margin-bottom:18px;}
+.int-form-list{display:flex;flex-direction:column;gap:6px;max-height:260px;overflow-y:auto;margin-bottom:18px;}
+.int-form-item{background:#fff;border:1.5px solid #E2E2E4;border-radius:8px;padding:11px 14px;cursor:pointer;font-size:13px;color:var(--ink);transition:border-color .12s;}
+.int-form-item:hover{border-color:#aaa;}
+.int-form-item.selected{border-color:#111;background:#F8F8F9;}
+.int-form-id{font-size:10px;color:var(--card-muted);font-family:ui-monospace,monospace;margin-top:3px;}
+.int-actions{display:flex;gap:8px;justify-content:flex-end;align-items:center;}
+.int-btn{background:#111;color:#fff;border:none;border-radius:7px;padding:9px 18px;font-size:12.5px;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .12s;}
+.int-btn:hover{opacity:.75;}
+.int-btn:disabled{opacity:.4;cursor:default;}
+.int-btn.outline{background:none;border:1px solid #D0D0D4;color:#444;}
+.int-btn.outline:hover{border-color:#888;opacity:1;}
+.int-sync-msg{font-size:11.5px;flex:1;padding-right:8px;}
+
 /* ── Client rail ── */
 .client-rail{display:flex;align-items:center;gap:6px;margin-bottom:24px;flex-wrap:wrap;}
 .client-tab{
@@ -526,7 +544,7 @@ footer{margin-top:36px;color:var(--ink-3);font-size:11px;text-align:center;lette
     </div>
   </div>
 
-  <div class="preview-notice">
+  <div class="preview-notice" id="previewNotice">
     <b>Integrations:</b> In the live local app, clicking a chip starts the OAuth flow for the selected client — each client stores its own separate account connection.
   </div>
 
@@ -604,6 +622,11 @@ footer{margin-top:36px;color:var(--ink-3);font-size:11px;text-align:center;lette
   <div class="funnel" id="stages"></div>
   <footer>Growth Engine &middot; data saved locally in this browser</footer>
 </div>
+
+<div id="intModal" style="display:none;" class="int-modal" onclick="if(event.target===this)closeIntModal()">
+  <div class="int-card" id="intCardBody"></div>
+</div>
+
 <script>
 /* ── Nano chart engine ── */
 const CHART_GRID='#DCDCDC';const CHART_TICK='#9B9BA3';
@@ -1283,19 +1306,117 @@ document.getElementById('resetBtn').onclick=e=>{
 };
 
 /* ── Integration chips (Typeform · Calendly · Meta Ads · Whop) ── */
+/* ── Integration sync ── */
+const IS_LOCAL=['localhost','127.0.0.1',''].includes(location.hostname);
+const LOCAL_SERVER='http://localhost:5175';
+let intStatus={};
+let _selectedFormId=null;
+let _tfForms=[];
+
+async function fetchIntStatus(){
+  if(!IS_LOCAL)return;
+  try{
+    const r=await fetch(`${LOCAL_SERVER}/api/status?clientId=${currentClientId}`);
+    if(r.ok)intStatus=await r.json();else intStatus={};
+  }catch(e){intStatus={};}
+  renderChips();
+}
+
 function renderChips(){
   const row=document.getElementById('sourcesRow');if(!row)return;row.innerHTML='';
+  const notice=document.getElementById('previewNotice');
   const PLATFORMS=['typeform','calendly','meta','whop'];
   const LABELS={typeform:'Typeform',calendly:'Calendly',meta:'Meta Ads',whop:'Whop'};
   const NOTES={typeform:'Application submissions & completion',calendly:'Booked calls & show rates',meta:'Ad spend, CTR & hook rate',whop:'Cash collected from your products'};
+  let anyConnected=false;
   PLATFORMS.forEach(p=>{
-    const chip=document.createElement('div');chip.className='chip';
-    chip.innerHTML=`<span class="cdot"></span><b>${LABELS[p]}</b>&nbsp;·&nbsp;not connected`;
-    chip.title=`${NOTES[p]} — connect in the live app`;
-    chip.onclick=()=>alert(`${LABELS[p]}\n${NOTES[p]}\n\nIn the live local app, clicking this starts the OAuth flow. Each client stores its own separate connection.`);
+    const chip=document.createElement('div');
+    const st=IS_LOCAL?(intStatus[p]||{}):{};
+    if(st.connected){chip.className='chip connected';anyConnected=true;}
+    else chip.className='chip';
+    chip.innerHTML=`<span class="cdot"></span><b>${LABELS[p]}</b>&nbsp;·&nbsp;${IS_LOCAL&&st.connected?'connected':IS_LOCAL?'not connected':'live app only'}`;
+    chip.title=NOTES[p];
+    chip.onclick=()=>IS_LOCAL?openIntModal(p):alert(`${LABELS[p]}\n\nRun the local server (node server/index.js) to enable live integrations.`);
     row.appendChild(chip);
   });
+  if(notice)notice.style.display=IS_LOCAL&&anyConnected?'none':'';
 }
+
+async function openIntModal(platform){
+  if(platform!=='typeform'){
+    const n=({calendly:'Calendly',meta:'Meta Ads',whop:'Whop'})[platform]||platform;
+    alert(`${n}\n\nConfigure via OAuth in server/.env. Currently only Typeform (PAT) is active.`);
+    return;
+  }
+  const modal=document.getElementById('intModal');
+  const body=document.getElementById('intCardBody');
+  body.innerHTML='<div style="padding:24px 0;text-align:center;color:var(--card-muted);font-size:13px;">Loading your forms…</div>';
+  modal.style.display='flex';
+  _selectedFormId=currentClient().typeformFormId||null;
+  try{
+    const r=await fetch(`${LOCAL_SERVER}/api/typeform/forms?clientId=${currentClientId}`);
+    if(!r.ok){const t=await r.text();throw new Error(t);}
+    _tfForms=await r.json();
+    renderFormPicker(body);
+  }catch(e){
+    body.innerHTML=`<div class="int-title">Typeform</div><div class="int-sub" style="color:var(--bad);">Could not load forms: ${e.message}</div><div class="int-actions"><button class="int-btn outline" onclick="closeIntModal()">Close</button></div>`;
+  }
+}
+
+function renderFormPicker(body){
+  const listHTML=_tfForms.map(f=>`<div class="int-form-item${_selectedFormId===f.id?' selected':''}" onclick="selectTfForm('${f.id}',this)"><div>${f.title}</div><div class="int-form-id">${f.id}</div></div>`).join('');
+  const c=currentClient();
+  body.innerHTML=`
+    <div class="int-title">Typeform · Select Form</div>
+    <div class="int-sub">Choose which form to pull application data from for <b>${c.name}</b></div>
+    <div class="int-form-list">${listHTML||'<div style="color:var(--card-muted);font-size:12px;padding:8px 0;">No forms found in this Typeform account.</div>'}</div>
+    <div class="int-actions">
+      <span class="int-sync-msg" id="intSyncMsg" style="display:none;color:var(--card-muted);"></span>
+      <button class="int-btn outline" onclick="closeIntModal()">Cancel</button>
+      <button class="int-btn" id="intSyncBtn" onclick="syncTypeform()"${!_selectedFormId?' disabled':''}>Sync data</button>
+    </div>`;
+}
+
+function selectTfForm(id,el){
+  _selectedFormId=id;
+  document.querySelectorAll('.int-form-item').forEach(e=>e.classList.remove('selected'));
+  el.classList.add('selected');
+  const btn=document.getElementById('intSyncBtn');
+  if(btn)btn.disabled=false;
+}
+
+async function syncTypeform(){
+  if(!_selectedFormId)return;
+  const c=currentClient();
+  c.typeformFormId=_selectedFormId;
+  queueSave();
+  const btn=document.getElementById('intSyncBtn');
+  const msg=document.getElementById('intSyncMsg');
+  if(btn)btn.disabled=true;
+  if(msg){msg.style.display='inline';msg.style.color='var(--card-muted)';msg.textContent='Syncing…';}
+  try{
+    const r=await fetch(`${LOCAL_SERVER}/api/sync/typeform?formId=${_selectedFormId}&since=${rangeStart}&until=${rangeEnd}&clientId=${currentClientId}`);
+    if(!r.ok){const t=await r.text();throw new Error(t);}
+    const{metrics}=await r.json();
+    if(!c.data)c.data={};
+    const dates=rangeDates();
+    Object.keys(metrics).forEach(id=>{
+      if(!c.data[id])c.data[id]={};
+      (metrics[id]||[]).forEach((v,i)=>{
+        if(i<dates.length){if(v!=null)c.data[id][dates[i]]=v;else delete c.data[id][dates[i]];}
+      });
+    });
+    queueSave();
+    if(msg){msg.textContent=`✓ Synced ${dates.length} days`;msg.style.color='var(--good)';}
+    renderAll();
+  }catch(e){
+    if(msg){msg.textContent=`Error: ${e.message}`;msg.style.color='var(--bad)';}
+  }finally{
+    if(btn)btn.disabled=false;
+  }
+}
+
+function closeIntModal(){document.getElementById('intModal').style.display='none';}
 
 /* ── Main render ── */
 function renderAll(){renderClientTabs();renderDateLabel();renderFocusCard();renderMetricTabs();renderMetricCards();renderStages();renderCharts();renderChips();}
@@ -1395,5 +1516,5 @@ document.getElementById('metricTabBar').addEventListener('contextmenu',e=>{
   inp.onkeydown=ke=>{if(ke.key==='Enter')inp.blur();if(ke.key==='Escape'){inp.value=tabNames[tab];inp.blur();}};
 });
 
-initRange();loadStored();if(!rangeStart||!rangeEnd)initRange();buildTrendSelect();renderAll();
+initRange();loadStored();if(!rangeStart||!rangeEnd)initRange();buildTrendSelect();renderAll();fetchIntStatus();
 </script>

@@ -7,6 +7,12 @@ const REFRESH_SKEW_MS = 2 * 60 * 1000; // refresh a bit before actual expiry
 // `.code` of NOT_CONNECTED or RECONNECT_REQUIRED so route handlers can respond
 // with the right HTTP status instead of a generic 500.
 async function ensureFreshToken(platform, provider, clientId){
+  // PAT shortcut: if TYPEFORM_PAT is set and no OAuth token is stored, use it directly.
+  // PATs don't expire so no refresh logic is needed.
+  if(platform === 'typeform' && process.env.TYPEFORM_PAT){
+    const token = tokenStore.getToken(platform, clientId);
+    if(!token) return process.env.TYPEFORM_PAT;
+  }
   const token = tokenStore.getToken(platform, clientId);
   if(!token){
     const err = new Error(`${platform} is not connected for this client`);
