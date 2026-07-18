@@ -1307,8 +1307,8 @@ document.getElementById('resetBtn').onclick=e=>{
 
 /* ── Integration chips (Typeform · Calendly · Meta Ads · Whop) ── */
 /* ── Integration sync ── */
-const IS_LOCAL=['localhost','127.0.0.1',''].includes(location.hostname);
-const LOCAL_SERVER='http://localhost:5175';
+const IS_LOCAL=true;
+const LOCAL_SERVER='https://tracking-production-5e36.up.railway.app';
 let intStatus={};
 let _selectedFormId=null;
 let _tfForms=[];
