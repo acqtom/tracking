@@ -3,6 +3,7 @@ const router = express.Router();
 const typeform = require('../lib/providers/typeform');
 const calendly = require('../lib/providers/calendly');
 const meta = require('../lib/providers/meta');
+const whop = require('../lib/providers/whop');
 const { getToken } = require('../lib/tokenStore');
 const { ensureFreshToken } = require('../lib/ensureFreshToken');
 
@@ -41,6 +42,15 @@ router.get('/meta/adaccounts', async (req, res) => {
   try{
     const accessToken = await ensureFreshToken('meta', meta, clientId);
     res.json(await meta.listAdAccounts(accessToken));
+  }catch(err){ handleError(res, err); }
+});
+
+router.get('/whop/products', async (req, res) => {
+  const { clientId } = req.query;
+  if(!clientId) return res.status(400).json({ error: 'Missing clientId' });
+  try{
+    const accessToken = await ensureFreshToken('whop', whop, clientId);
+    res.json(await whop.listProducts(accessToken));
   }catch(err){ handleError(res, err); }
 });
 

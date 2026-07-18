@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const { getClientTokens } = require('../lib/tokenStore');
 
-const PLATFORMS = ['typeform', 'calendly', 'meta'];
+const PLATFORMS = ['typeform', 'calendly', 'meta', 'whop'];
 
 // GET /api/status?clientId=<id>
 // Returns connection status for all three platforms for the given client.

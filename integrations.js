@@ -4,13 +4,13 @@
    renderAll(), renderKPIs(), renderStages(), renderCharts(), closeCtxMenu(),
    weekDates() are all plain globals it calls directly — no imports needed). */
 (function(){
-  const PLATFORMS = ['typeform', 'calendly', 'meta'];
-  const PLATFORM_LABEL = { typeform: 'Typeform', calendly: 'Calendly', meta: 'Meta Ads' };
-  const PLATFORM_RESOURCE_LABEL = { typeform: 'form', calendly: 'event type', meta: 'ad account' };
-  const RESOURCE_ENDPOINT = { typeform: '/api/typeform/forms', calendly: '/api/calendly/event-types', meta: '/api/meta/adaccounts' };
-  const RESOURCE_KEY = { typeform: 'formId', calendly: 'eventTypeUri', meta: 'adAccountId' };
-  const RESOURCE_ID_FIELD = { typeform: 'id', calendly: 'uri', meta: 'id' };
-  const RESOURCE_NAME_FIELD = { typeform: 'title', calendly: 'name', meta: 'name' };
+  const PLATFORMS = ['typeform', 'calendly', 'meta', 'whop'];
+  const PLATFORM_LABEL = { typeform: 'Typeform', calendly: 'Calendly', meta: 'Meta Ads', whop: 'Whop' };
+  const PLATFORM_RESOURCE_LABEL = { typeform: 'form', calendly: 'event type', meta: 'ad account', whop: 'product' };
+  const RESOURCE_ENDPOINT = { typeform: '/api/typeform/forms', calendly: '/api/calendly/event-types', meta: '/api/meta/adaccounts', whop: '/api/whop/products' };
+  const RESOURCE_KEY = { typeform: 'formId', calendly: 'eventTypeUri', meta: 'adAccountId', whop: 'productId' };
+  const RESOURCE_ID_FIELD = { typeform: 'id', calendly: 'uri', meta: 'id', whop: 'id' };
+  const RESOURCE_NAME_FIELD = { typeform: 'title', calendly: 'name', meta: 'name', whop: 'name' };
 
   let statusCache = {};
 

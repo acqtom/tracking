@@ -5,8 +5,9 @@ const state = require('../lib/state');
 const typeform = require('../lib/providers/typeform');
 const calendly = require('../lib/providers/calendly');
 const meta = require('../lib/providers/meta');
+const whop = require('../lib/providers/whop');
 
-const PROVIDERS = { typeform, calendly, meta };
+const PROVIDERS = { typeform, calendly, meta, whop };
 
 // The frontend passes ?clientId=<id> so the OAuth round-trip knows which client
 // to attach the resulting token to. clientId is stored inside the CSRF state

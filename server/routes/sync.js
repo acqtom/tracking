@@ -3,6 +3,7 @@ const router = express.Router();
 const typeform = require('../lib/providers/typeform');
 const calendly = require('../lib/providers/calendly');
 const meta = require('../lib/providers/meta');
+const whop = require('../lib/providers/whop');
 const { getToken } = require('../lib/tokenStore');
 const { ensureFreshToken } = require('../lib/ensureFreshToken');
 
@@ -83,6 +84,20 @@ router.get('/sync/meta', async (req, res) => {
       return Math.round((b.videoPlays / b.impressions) * 10000) / 100;
     });
     res.json({ metrics: { ad_spend, cpc, ctr, hook }, beta: ['hook'] });
+  }catch(err){ handleError(res, err); }
+});
+
+// Whop sync: fetches paid payments for the given product and week, fills cash metric.
+router.get('/sync/whop', async (req, res) => {
+  const { productId, since, until, clientId } = req.query;
+  if(!since || !until) return res.status(400).json({ error: 'since, until are required' });
+  if(!clientId) return res.status(400).json({ error: 'Missing clientId' });
+  try{
+    const accessToken = await ensureFreshToken('whop', whop, clientId);
+    const buckets = await whop.fetchDailyPayments(accessToken, productId || null, since, until);
+    const days = dateRangeDays(since, until);
+    const cash = days.map(d => buckets[d] != null ? buckets[d] : null);
+    res.json({ metrics: { cash } });
   }catch(err){ handleError(res, err); }
 });
 
